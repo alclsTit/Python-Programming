@@ -4,8 +4,16 @@ from xmlbook import *
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+#################추가
+import os
+import sys
+import urllib.request
+
+
+
 ##global
 conn = None
+itemElements = None
 #다음api
 regKey = 'XhKqnYiL44B3YdVVzKn2K2HUJ0tJJMUAAveunEp5YXfcfJhkpnUmo98E%2FlRE1X5CjqWTRCstJYzKwAHNCZ8lVQ%3D%3D'
 
@@ -21,12 +29,7 @@ host = "smtp.gmail.com" # Gmail SMTP 서버 주소.
 port = "587"
 
 def userURIBuilder(server,**user):
-    #네이버 검색URL
-    # str = "http://" + server + "/search" + "?"
-
-    #다음 검색 URL
-    #" " 은 갯수가 정해지지 않은 사전형 문자열을 받는다
-    str = "https://" + server + "/B552657/HsptlAsembySearchService/getHsptlMdcncFullDown" + "?"
+    str = "https://" + server + "/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire" + "?"
     for key in user.keys():
         str += key + "=" + user[key] + "&"
     return str
@@ -36,15 +39,50 @@ def connectOpenAPIServer():
     conn = HTTPConnection(server)
 
 #여기부분 수정
-def getBookDataFromISBN(pageNumber):
+def getBookDataFromName(name):
+
     global server, regKey, conn
+    encText = urllib.parse.quote(name)
+    if conn == None:
+        connectOpenAPIServer()
+    # uri = userURIBuilder(server, key=regKey, query='%20', display="1", start="1", target="book_adv", d_isbn=isbn)
+    uri = userURIBuilder(server, servicekey=regKey, QN=encText, numOfRows="1000")
+    conn.request("GET", uri)
+
+    # 파싱 추가코드
+    # request = urllib.request.Request(uri)
+    # response = urllib.request.urlopen(request)
+    # rescode = response.getcode()
+
+    req = conn.getresponse()
+
+    print(req.status)
+    if int(req.status) == 200:  # okay
+        print("Book data downloading complete!")
+        return extractBookData(req.read())
+    else:
+        print("OpenAPI request has been failed!! please retry")
+        return None
+
+def getBookDataFromISBN1(address):
+    global server, regKey, conn
+
+    encText = urllib.parse.quote(address)
+
     if conn == None :
         connectOpenAPIServer()
     #uri = userURIBuilder(server, key=regKey, query='%20', display="1", start="1", target="book_adv", d_isbn=isbn)
-    uri = userURIBuilder(server, servicekey=regKey, pageNo=pageNumber, numOfRows = "1000")
+    uri = userURIBuilder(server, servicekey=regKey, Q0 =  encText, numOfRows = "1000")
     conn.request("GET", uri)
-    
+
+    #파싱 추가코드
+    #request = urllib.request.Request(uri)
+    #response = urllib.request.urlopen(request)
+    #rescode = response.getcode()
+
     req = conn.getresponse()
+
+
     print (req.status)
     if int(req.status) == 200 : #okay
         print("Book data downloading complete!")
@@ -52,6 +90,35 @@ def getBookDataFromISBN(pageNumber):
     else:
         print ("OpenAPI request has been failed!! please retry")
         return None
+
+def getBookDataFromISBN(address,name):
+    global server, regKey, conn
+
+    encText = urllib.parse.quote(address)
+    encText2 = urllib.parse.quote(name)
+
+    if conn == None :
+        connectOpenAPIServer()
+    #uri = userURIBuilder(server, key=regKey, query='%20', display="1", start="1", target="book_adv", d_isbn=isbn)
+    uri = userURIBuilder(server, servicekey=regKey, Q0 =  encText, QN = encText2, numOfRows = "1000")
+    conn.request("GET", uri)
+
+    #파싱 추가코드
+    #request = urllib.request.Request(uri)
+    #response = urllib.request.urlopen(request)
+    #rescode = response.getcode()
+
+    req = conn.getresponse()
+
+
+    print (req.status)
+    if int(req.status) == 200 : #okay
+        print("Book data downloading complete!")
+        return extractBookData(req.read())
+    else:
+        print ("OpenAPI request has been failed!! please retry")
+        return None
+
 
 def SearchData(Addr):
     global server, regKey, conn
@@ -77,6 +144,8 @@ def extractHospitalData(strXml,Addr):
     tree = ElementTree.fromstring(strXml)
     itemElements = tree.getiterator("item")
 
+
+
     for item in itemElements:
         ItemAddr = item.find("dutyAddr")
         str(ItemAddr).split()
@@ -89,19 +158,23 @@ def extractBookData(strXml):
     from xml.etree import ElementTree
     tree = ElementTree.fromstring(strXml)
     print (strXml)
+    #print("디버그")
     # Book 엘리먼트를 가져옵니다.
-    itemElements = tree.getiterator("item")  # return list type
-    print(itemElements)
 
+    global itemElements
+    itemElements = tree.getiterator("item")  # return list type
+    strXml.decode('utf-8')
+    print(itemElements)
+    cnt =0
     #데이터 69000개까지 rum = 69까지 존재
     for item in itemElements:
-        name = item.find("dutyName")  # 병원이름
-        phone = item.find("dutyTel1")  # 병원전화번호
-        ErynPhone = item.find("dutyTel3")  # 응급실 전화번호
-        addr = item.find("dutyAddr")  # 병원주소
-        Eryn = item.find("dutyEryn")  # 응급실운영여부
-        etc = item.find("dutyEtc")  # 비고
-        DespInfo = item.find("dutyInf")  # 상세내용
+        BigAdress = item.find("dutyAddr")  # 도
+        #SmallAdress = item.find("Q1")  # 구
+        QZ = item.find("dutyName")  #  B : 병원 C : 의원
+        QD = item.find("QD")  #  모르겠음ㅎ
+        Tel = item.find("dutyTel1")  # 일하는날
+        #HospitalName = item.find("QN")  # 병원이름
+
 
         weekdaySTime = item.find("dutyTime1s")    # 평일 시작시간
         weekdayETime = item.find("dutyTime1c")    # 평일 끝나는시간
@@ -115,25 +188,32 @@ def extractBookData(strXml):
         HolidaySTime = item.find("dutyTime8s")    #공휴일 진료 시작시간
         HolidayETime = item.find("dutyTime8c")    #공휴일 진료 끝나는시간
 
-        Num = item.find("rnum")
+        #Num = item.find("rnum")
 
-        print(name.text)
-        print(addr.text)
-        print(phone.text)
-        #print(DespInfo.text)
-        #print(etc.text)
-        print(Num.text)
-        #rnum = 항목번호
+        print("이름:",QZ.text)
+        print("주소:",BigAdress.text)
+        print("전화번호:",Tel.text)
+        if weekdaySTime ==None or weekdayETime == None :
+            pass
+        else:
+            print("평일 진료 시작시간:",weekdaySTime.text, "평일 진료 종료 시간 ",weekdayETime.text)
 
-        #print(ErynPhone)
-        #print(Eryn)
+        if weekendSTime == None or weekendETime == None :
+            pass
+        else:
+            print("토요일 진료 시작시간:",weekendSTime.text, "토요일 진료 종료 시간 ",weekendETime.text)
+        if weekendSTimeH == None or weekendETimeH == None:
+            pass
+        else:
+            print("일요일 진료 시작시간:", weekendSTimeH.text, "일요일 진료 종료 시간 ", weekendETimeH.text)
+        if HolidaySTime==None or HolidayETime == None:
+           pass
+        else:
+            print("일요일 진료 시작시간:", HolidaySTime.text, "일요일 진료 종료 시간 ", HolidayETime.text)
+        cnt = cnt +1
+        print(cnt)
+        print(" ")
 
-        if len(name.text) > 0:
-            return {"병원이름" : name.text, "대표전화": phone.text}
-
-        #print (strTitle)
-        #if len(strTitle.text) > 0 :
-        #   return {"ISBN":isbn.text,"title":strTitle.text}
 
 def sendMain():
     global host, port
