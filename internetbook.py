@@ -9,20 +9,22 @@ import os
 import sys
 import urllib.request
 
-
-
 ##global
 conn = None
 itemElements = None
+ImageItemList = []
+
 #다음api
 regKey = 'XhKqnYiL44B3YdVVzKn2K2HUJ0tJJMUAAveunEp5YXfcfJhkpnUmo98E%2FlRE1X5CjqWTRCstJYzKwAHNCZ8lVQ%3D%3D'
+
+DaumRegKey = '1efb37404806e2bdc4373a41da338841'
 
 # 네이버 OpenAPI 접속 정보 information
 #server = "openapi.naver.com"
 
 # 다음 OpenAPI 접속 정보 information
 server = "apis.data.go.kr"
-
+DaumServer = "apis.daum.net"
 
 # smtp 정보
 host = "smtp.gmail.com" # Gmail SMTP 서버 주소.
@@ -34,9 +36,40 @@ def userURIBuilder(server,**user):
         str += key + "=" + user[key] + "&"
     return str
 
+def DaumUserURIBuilder(DaumServer,**user):
+    str = "https://" + DaumServer + "/search/image" + "?"
+    for key in user.keys():
+        str += key + "=" + user[key] + "&"
+    return str
+
+def getDaumImageData(imageName):
+    global DaumServer, DaumRegKey, conn, xml, ImageItemList
+
+    Name = urllib.parse.quote(imageName)
+
+    if conn == None:
+        connectDaumPIServer()
+
+    uri = DaumUserURIBuilder(DaumServer, apikey=DaumRegKey, q = Name, output = "xml")
+    conn.request("GET", uri)
+    req = conn.getresponse()
+
+    if int(req.status) == 200:  # okay
+        return extractImageData(req.read()) ,  ImageItemList
+    else:
+        print("OpenAPI request has been failed!! please retry")
+        return None
+
+
+
+
 def connectOpenAPIServer():
     global conn, server
     conn = HTTPConnection(server)
+
+def connectDaumPIServer():
+    global conn, DaumServer
+    conn = HTTPConnection(DaumServer)
 
 #여기부분 수정
 def getBookDataFromName(name):
@@ -119,52 +152,54 @@ def getBookDataFromISBN(address,name):
         print ("OpenAPI request has been failed!! please retry")
         return None
 
+def extractImageData(strXml):
+    global channelElements , itemListElements
+    global ImageChannelList , ImageItemList
 
-def SearchData(Addr):
-    global server, regKey, conn
-    if conn == None :
-        connectOpenAPIServer()
-
-    for i in range(69):
-        #for j in range(1000):
-        uri = userURIBuilder(server, servicekey = regKey, pageNo = str(i + 1), numOfRows = "1000")
-        conn.request("GET", uri)
-        req = conn.getresponse()
-
-        if int(req.status) == 200:  # okay
-            print("Book data downloading complete!")
-            return  extractHospitalData(req.read(), Addr)
-        else:
-            print("OpenAPI request has been failed!! please retry")
-            return None
-
-
-def extractHospitalData(strXml,Addr):
     from xml.etree import ElementTree
     tree = ElementTree.fromstring(strXml)
-    itemElements = tree.getiterator("item")
+
+    channelElements = tree.getiterator("channel")
+    itemListElements = tree.getiterator("item")
+
+    strXml.decode('utf-8')
+
+    ImageChannelList = []
+
+    if len(ImageItemList) > 0:
+        ImageItemList.clear()
+
+    showCnt = 0
+    #한번만 받아옴
+    for channel in channelElements:
+        title = channel.find("title")
+        dep = channel.find("description")
+        link = channel.find("link")
+
+        ImageChannelList += [title, dep, link]
+
+    for item in itemListElements:
+        width = item.find("width")
+        height = item.find("height")
+        cpn = item.find("cpname")
+        url = item.find("image")
+
+        ImageItemList.append([width.text, height.text, cpn.text, url.text])
+
+        showCnt += 1
+        if(showCnt >= 3):
+            break
 
 
-
-    for item in itemElements:
-        ItemAddr = item.find("dutyAddr")
-        str(ItemAddr).split()
-    print(Addr)
-
-    #for item in itemElements:
-    #    if
 
 def extractBookData(strXml):
     from xml.etree import ElementTree
     tree = ElementTree.fromstring(strXml)
-    print (strXml)
-    #print("디버그")
-    # Book 엘리먼트를 가져옵니다.
 
-    global itemElements
+    global SList, itemElements
     itemElements = tree.getiterator("item")  # return list type
     strXml.decode('utf-8')
-    print(itemElements)
+
     cnt =0
     #데이터 69000개까지 rum = 69까지 존재
     for item in itemElements:
@@ -212,6 +247,8 @@ def extractBookData(strXml):
             print("일요일 진료 시작시간:", HolidaySTime.text, "일요일 진료 종료 시간 ", HolidayETime.text)
         cnt = cnt +1
         print(cnt)
+        #여기에 정보 추가
+        SList += []
         print(" ")
 
 
