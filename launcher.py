@@ -9,7 +9,7 @@ from io import BytesIO
 import urllib
 import urllib.request
 from PIL import Image, ImageTk
-
+from Pw import *
 #--------------------------------------------------
 
 server = "apis.data.go.kr"
@@ -18,53 +18,71 @@ regKey = 'XhKqnYiL44B3YdVVzKn2K2HUJ0tJJMUAAveunEp5YXfcfJhkpnUmo98E%2FlRE1X5CjqWT
 import tkinter.messagebox
 
 RenderText = None
+DataList = []
+g_Tk = None
 
 def InitTopText():
     TempFont = font.Font(g_Tk, size =20, weight = 'bold', family = 'Consolas')
     MainText = Label(g_Tk, font = TempFont, text = "[전국 병원 찾기 서비스]")
     MainText.pack()
-    MainText.place(x=20)
+    MainText.place(x=350)
 
 def InitSearchListBox():
     global SearchListBox
     ListBoxScrollbar = Scrollbar(g_Tk)
+
     ListBoxScrollbar.pack()
-    ListBoxScrollbar.place(x=150, y=50)
+    ListBoxScrollbar.place(x=163, y=58)
+
     TempFont = font.Font(g_Tk, size=15, weight='bold', family='Consolas')
     SearchListBox = Listbox(g_Tk, font=TempFont, activestyle='none',
-                            width=23, height=4, borderwidth=14, relief='ridge'
-                            ,yscrollcommand=ListBoxScrollbar.set)
-    SearchListBox.insert(0, "위치기반검색")
-    SearchListBox.insert(1, "이름기반검색")
-    SearchListBox.insert(2, "위치+이름기반검색")
+                            width=12, height=1, borderwidth=12, relief='ridge'
+                            ,yscrollcommand = ListBoxScrollbar.set)
+    ListBoxScrollbar.config(command=SearchListBox.yview)
+
+    SearchListBox.insert(1, "위치기반검색")
+    SearchListBox.insert(2, "이름기반검색")
+    SearchListBox.insert(3, "위치+이름기반검색")
     #임시
-    SearchListBox.insert(3, "이미지검색")
+    SearchListBox.insert(4, "이미지검색")
+
+
 
     SearchListBox.pack()
-    SearchListBox.place(x=10, y=50)
+    SearchListBox.place(x=10, y=60)
+
+
+
+
+
+
+
 
 def InitInputLabel():
     global InputLabel
     TempFont = font.Font(g_Tk, size=15, weight='bold', family = 'Consolas')
-    InputLabel = Entry(g_Tk, font=TempFont, width=26, borderwidth=12, relief='ridge')
+    InputLabel = Entry(g_Tk, font=TempFont, width=45, borderwidth=12, relief='ridge')
     InputLabel.pack()
-    InputLabel.place(x=10, y=165)
+    InputLabel.place(x=200, y=60)
 
 def InitRenderText():
     global RenderText
     RenderTextScrollbar = Scrollbar(g_Tk)
     RenderTextScrollbar.pack()
     RenderTextScrollbar.place(x=375, y=200)
+
     TempFont = font.Font(g_Tk, size=10, family='Consolas')
-    RenderText = Text(g_Tk, width=49, height=27, borderwidth=12, relief='ridge', yscrollcommand=RenderTextScrollbar.set)
+    RenderText = Text(g_Tk, width=70, height=40, borderwidth=12, relief='ridge', yscrollcommand=RenderTextScrollbar.set)
     RenderText.pack()
-    RenderText.place(x=10, y=215)
+    RenderText.place(x=10, y=130)
+
     RenderTextScrollbar.config(command=RenderText.yview)
+
     RenderTextScrollbar.pack(side=RIGHT, fill=BOTH)
     RenderText.configure(state='disabled')
 
 def InitSearchButton():
-    TempFont = font.Font(g_Tk, size=12, weight='bold', family='Consolas')
+    TempFont = font.Font(g_Tk, size=16, weight='bold', family='Consolas')
 
     SearchButton = Button(g_Tk, font=TempFont, text="검색", command=SearchButtonAction)
     gmailButton = Button(g_Tk,font= TempFont, text="이메일 보내기", command = OpenMailWindow)
@@ -72,21 +90,17 @@ def InitSearchButton():
     gmailButton.pack()
     SearchButton.pack()
 
-    SearchButton.place(x=330, y=165)
-    gmailButton.place(x=300, y = 100)
+    SearchButton.place(x=730, y = 65)
+    gmailButton.place(x=810, y = 65)
 
 #-----------------------------------------------------------------------------------------------------------
 #이미지
 def MakeImage(ImageName):
      getDaumImageData(ImageName)
-     root = Tk()
-     root.geometry("1024x1024+500+200")
+     #root = Tk()
+     #root.geometry("1024x1024+500+200")
 
      url = str(ImageItemList[0][3])
-     with urllib.request.urlopen(url) as u:
-         raw_data = u.read()
-
-
      with urllib.request.urlopen(url) as u:
          raw_data = u.read()
 
@@ -97,11 +111,11 @@ def MakeImage(ImageName):
      #ImageHeight = ImageItemList[0][1]
      #ImageWidth = ImageItemList[0][0]
 
-     label = Label(root, image = image, height=400, width=400)
+     label = Label(g_Tk, image = image, height=400, width=400)
      label.pack()
      label.place(x=0, y=0)
 
-     root.mainloop()
+     g_Tk.mainloop()
 
 #-----------------------------------------------------------------------------------------------------------
 
@@ -137,6 +151,16 @@ def MailTk():
         InputMailTkLabel(mail_Tk,100 + i * 80)
 
     InitMailTkSendButton(mail_Tk)
+
+    url = "http://cfile10.uf.tistory.com/image/2710E53756D6D0601C650D"
+    with urllib.request.urlopen(url) as u:
+        raw_data = u.read()
+
+    im = Image.open(BytesIO(raw_data))
+    image = ImageTk.PhotoImage(im)
+    label = Label(mail_Tk, image=image, height=400, width=400)
+    label.pack()
+    label.place(x=0, y=0)
 
     mail_Tk.mainloop()
 
@@ -226,10 +250,70 @@ def SearchInfoAddr():
 
     req = conn.getresponse()
     if int(req.status) == 200:  # okay
-        return ExtractDataFromURI(req.read())
+        return temp(req.read())
+        #return ExtractDataFromURI(req.read())
     else:
         print("OpenAPI request has been failed!! please retry")
         return None
+
+
+def temp(strXml):
+    from xml.etree import ElementTree
+    tree = ElementTree.fromstring(strXml)
+
+    global itemElements , showBox
+    # global SList
+
+    itemElements = tree.getiterator("item")  # return list type
+    strXml.decode('utf-8')
+    # print(itemElements)
+    cnt = 0
+    # 데이터 69000개까지 rum = 69까지 존재
+    # SList = []
+    ListBoxScrollbar = Scrollbar(g_Tk)
+
+    ListBoxScrollbar.pack()
+    ListBoxScrollbar.place(x=163, y=58)
+
+    TempFont = font.Font(g_Tk, size=12, weight='bold', family='Consolas')
+    showBox = Listbox(g_Tk, font=TempFont, activestyle='none',
+                            width=0, height=27, borderwidth=12, relief='ridge'
+                            , yscrollcommand=ListBoxScrollbar.set)
+    index = 0
+    for item in itemElements:
+        BigAdress = item.find("dutyAddr")  # 도
+        # SmallAdress = item.find("Q1")  # 구
+        QZ = item.find("dutyName")  # B : 병원 C : 의원
+        Emergency = item.find("dutyEryn")  # 모르겠음ㅎ
+        Tel = item.find("dutyTel1")  # 일하는날
+        JobDef = item.find("dutyInf")
+
+        showBox.insert(index, "주소: " + BigAdress.text)
+        showBox.insert(index, "전화번호: " + Tel.text)
+        showBox.insert(index,"[" + str(cnt + 1) + "]" + "병원이름: " + QZ.text)
+
+
+
+
+
+        cnt  = cnt + 1
+        if cnt >= 3:
+            break
+        #RenderText.insert(INSERT, "[")
+        #RenderText.insert(INSERT, cnt + 1)
+        #RenderText.insert(INSERT, "]")
+        #RenderText.insert(INSERT, "병원이름: ")
+        #RenderText.insert(INSERT, QZ.text)
+        #RenderText.insert(INSERT, "굈")
+        #RenderText.insert(INSERT, "주소: ")
+        #RenderText.insert(INSERT, BigAdress.text)
+        #RenderText.insert(INSERT, "굈")
+        #RenderText.insert(INSERT, "전화번호: ")
+        #RenderText.insert(INSERT, Tel.text)
+        #RenderText.insert(INSERT, "굈")
+        #RenderText.insert(INSERT, "응급실 운영여부: ")
+    showBox.pack()
+    showBox.place(x = 10,y = 130)
 
 def ExtractDataFromURI(strXml):
     from xml.etree import ElementTree
@@ -392,39 +476,44 @@ def launcherFunction(menu):
     else:
         print ("error : unknow menu key")
 
+def Main():
+    g_Tk = Tk()
+    g_Tk.geometry("1000x700+750+200")
+    InitTopText()
+    InitSearchListBox()
+    InitInputLabel()
+    InitSearchButton()
+    InitRenderText()
+    g_Tk.mainloop()
 
-g_Tk = Tk()
-g_Tk.geometry("450x600+750+200")
-DataList = []
-InitTopText()
-InitSearchListBox()
-InitInputLabel()
-InitSearchButton()
-InitRenderText()
-g_Tk.mainloop()
+
+def ShowLoop():
+    #Title()
+    Main()
 
 
-def QuitBookMgr():
-
-    global loopFlag
-    loopFlag = 0
-    BooksFree()
+ShowLoop()
+#def QuitBookMgr():
+#
+#    global loopFlag
+#    loopFlag = 0
+#    BooksFree()
     
 ##### run #####
-while(loopFlag > 0):
-
-    printMenu()
-
-
-    menuKey = str(input('select menu :'))
-    launcherFunction(menuKey)
-
-
-
-
-
-else:
-    print ("Thank you! Good Bye")
+#while(loopFlag > 0):
+##
+#    printMenu()
+#
+#
+#    menuKey = str(input('select menu :'))
+#    launcherFunction(menuKey)
+#
+#
+#
+#
+#
+#else:
+#    print ("Thank you! Good Bye")
 
 
 
