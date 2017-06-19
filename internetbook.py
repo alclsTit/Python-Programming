@@ -252,18 +252,30 @@ def extractBookData(strXml):
         print(" ")
 
 
-def sendMain():
+def sendMain(List):
     global host, port
     html = ""
-    title = str(input ('Title :'))
-    senderAddr = str(input ('sender email address :'))
-    recipientAddr = str(input ('recipient email address :'))
-    msgtext = str(input ('write message :'))
-    passwd = str(input (' input your password of gmail account :'))
-    msgtext = str(input ('Do you want to include book data (y/n):'))
-    if msgtext == 'y' :
-        keyword = str(input ('input keyword to search:'))
-        html = MakeHtmlDoc(SearchBookTitle(keyword))
+    #title = str(input ('Title :'))
+    senderAddr = "c936891@gmail.com"
+    recipientAddr = "gusdl576@naver.com"
+    temp_str = " "
+    temp_str3 = " "
+
+    if(List[0][4] == "1"):
+        temp_str2 = "응급실 운영함"
+    else:
+        temp_str2 = "응급실 운영안함"
+
+    temp_str3 += "평일 진료시간: " + List[0][5] + "토요일 진료시간:" + List[0][6] + "일요일 진료시간: " + List[0][7] + "공휴일 진료시간" + List[0][8]
+    temp_str += "병원이름: " +  List[0][1] + "    " +  "주소: " + List[0][2] + "    " + "전화번호: " + List[0][3] + "    " + temp_str2 + temp_str3
+
+    msgtext = str(temp_str)
+    passwd = "choi975813"
+    #html = MakeHtmlDoc(msgtext)
+    #msgtext = str(input ('Do you want to include book data (y/n):'))
+    #if msgtext == 'y' :
+    #    keyword = str(input ('input keyword to search:'))
+    #    html = MakeHtmlDoc(SearchBookTitle(keyword))
     
     import mysmtplib
     # MIMEMultipart의 MIME을 생성합니다.
@@ -274,16 +286,16 @@ def sendMain():
     msg = MIMEMultipart('alternative')
 
     #set message
-    msg['Subject'] = title
-    msg['From'] = senderAddr
-    msg['To'] = recipientAddr
+    msg['Subject'] = "병원 정보"
+    msg['From'] = "c936891@gmail.com"
+    msg['To'] = "gusdl576@naver.com"
     
     msgPart = MIMEText(msgtext, 'plain')
     bookPart = MIMEText(html, 'html', _charset = 'UTF-8')
     
     # 메세지에 생성한 MIME 문서를 첨부합니다.
     msg.attach(msgPart)
-    msg.attach(bookPart)
+    #msg.attach(bookPart)
     
     print ("connect smtp server ... ")
     s = mysmtplib.MySMTP(host,port)
